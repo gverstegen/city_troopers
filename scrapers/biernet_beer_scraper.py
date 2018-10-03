@@ -56,3 +56,4 @@ while True:
     pageNumber = pageNumber + 1
 
 df_biermerken = pd.DataFrame(output_list_bier, columns=['biermerk', 'biersoort', 'brouwerij', 'alcohol'])
+df_biermerken.to_csv("C:/Users/gjave/Desktop/biermerken.csv", sep='|', encoding='UTF-8',index=False)
