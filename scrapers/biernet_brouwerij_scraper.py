@@ -1,65 +1,70 @@
-import lxml.etree
 import lxml.html
-import requests
 import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
+import time
 
-pageNumber = 1
-output_list_brouwerij = []
+browser = webdriver.Chrome()
+domain = "https://www.biernet.nl"
+url = domain + "/bier/brouwerijen"
+browser.get(url) #navigate to the page
+
+element1 = browser.find_element_by_id("bottom_list")
+actions = ActionChains(browser)
+actions.move_to_element(element1).perform()
+body = browser.find_element_by_css_selector('body')
+body.send_keys(Keys.PAGE_DOWN)
 
 while True:
-    # Request connection to page
-    r = requests.get("https://www.biernet.nl/bier/brouwerijen")
-    #r = requests.get("https://www.biernet.nl/bier/brouwerijen?center=49.386571988986745,-15.80344336947519&zoom=4&filters=brouwerij,brouwerij_huurder")
-
-    # Get content as string
-    root = lxml.html.fromstring(r.content)
-
-    # If there is an error on the page, quit
-    error = root.xpath("//div[contains(@class, 'error')]/text()")
-    if error != [] and error != ['De map functioneert alleen wanneer Javascript aan staat.']:
-        print("Page returns an error.")
+    body = browser.find_element_by_css_selector('body')
+    body.send_keys(Keys.PAGE_DOWN)
+    element2 = browser.find_element_by_id("bottom_list")
+    actions = ActionChains(browser)
+    actions.move_to_element(element2).perform()
+    find_elem = browser.find_element_by_xpath(".//*[@id='bottom_list']").get_attribute('style')
+    time.sleep(1)
+    if find_elem == 'display: none;':
         break
 
-    print("Scraping page.")
-    # Page output
-    page_list = []
-    i = 1
-    while True:
-        # Get the values of interest
-        try:
-            brouwerij = root.xpath("//*[@id='brouwerijLijst']/li[1]/text()")
-        except:
-            brouwerij = ''
-        try:
-            stad = root.xpath("//*[@id='brouwerijLijst']/li[1]/p/a[1]/text()")
-        except:
-            stad = ''
-        # try:
-        #     provincie = root.xpath("//*[@id='brouwerijLijst']/li[1]/p/a[2]/text()")
-        # except:
-        #     provincie = ''
-        #
-        # # Hier moet nog een loop omheen
-        # try:
-        #     perks = root.xpath("//*[@id='brouwerijLijst']/li[1]/div/text()")
-        # except:
-        #     perks = ''
+try:
+    innerHTML = browser.execute_script("return document.body.innerHTML") #returns the inner HTML as a string
+    root = lxml.html.fromstring(innerHTML)
+    items = root.xpath(".//*[@id='brouwerijLijst']")
+    output_list_brouwerij = []
+except:
+    print('error')
 
-        # Break if last row of the table has been reached
-        print(brouwerij)
-        print(stad)
-        if (brouwerij == ''  and stad == ''):# and provincie == '' and perks == ''):
-            break
+page_list = []
+try:
+    items = root.xpath(".//*[@id='brouwerijLijst']/li")
+except:
+    print('no items found')
+for i in items:
+    try:
+        brouwerij = i.xpath(".//h2/a/text()")[0]
+    except:
+        brouwerij = ''
+    try:
+        stad = i.xpath(". //p/a[1]/text()")[0]
+    except:
+        stad = ''
+    try:
+        provincie = i.xpath(". //p/a[2]/text()")[0]
+    except:
+        provincie = ''
+    try:
+        url = domain +  i.xpath(". //a/@href")[0]
+    except:
+        url = ''
+    # Break if last row of the table has been reached
 
-        # Append the new row data
-        row = [brouwerij, stad]#, provincie, perks]
-        page_list.append(row)
-        print("Page " + str(i) + " is scraped.")
-        i = i + 1
+    # Append the new row data
+    row = [brouwerij, stad, provincie, url]
+    page_list.append(row)
 
-    # Add the new page data
-    output_list_brouwerij.extend(page_list)
-    pageNumber = pageNumber + 1
+# Add the new page data
+output_list_brouwerij.extend(page_list)
 
-df_brouwerij = pd.DataFrame(output_list_brouwerij, columns=['brouwerij', 'stad'])#, 'provincie', 'perks'])
-df_brouwerij.to_csv("C:/Users/gjave/Desktop/brouwerijen.csv", sep='|', encoding='UTF-8',index=False)
+df_brouwerij = pd.DataFrame(output_list_brouwerij, columns=['brouwerij', 'stad', 'provincie', 'url'])
+df_brouwerij.to_csv("C:/Users/gjave/Desktop/brouwerijen1.csv", sep='|', encoding='UTF-8',index=False)
