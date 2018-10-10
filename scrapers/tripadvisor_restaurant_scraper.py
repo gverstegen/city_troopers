@@ -5,9 +5,10 @@ import time
 import re
 
 domain = "https://www.tripadvisor.nl"
-start_uri = "/Restaurants-g188632-Rotterdam_South_Holland_Province.html#EATERY_OVERVIEW_BOX"
-start_page_url = domain + start_uri
+#start_uri = "/Restaurants-g188632-Rotterdam_South_Holland_Province.html#EATERY_OVERVIEW_BOX"
+start_uri = "/Restaurants-g293974-Istanbul.html"
 
+start_page_url = domain + start_uri
 # Request connection to page
 r = requests.get(start_page_url)
 # Get content as string
@@ -51,7 +52,6 @@ while True:
                 itemPrice = itemPrice.replace("\n", "")
             except:
                 itemPrice = None
-
             row = [itemName, itemLink, itemRank, itemRating, itemReviews, itemPrice]
             pageOutput.append(row)
         output.extend(pageOutput)
@@ -71,8 +71,19 @@ while True:
     except Exception:
         print("Next page not found")
         break
-    r = requests.get(next_page_url)
+
+    print("Requesting url...")
+    attempt = 1
+    while True:
+        try:
+            r = requests.get(next_page_url, timeout = 5)
+            print("Success")
+            break
+        except requests.exceptions.Timeout:
+            attempt += 1
+            print(attempt)
+            continue
     root = lxml.html.fromstring(r.content)
 
 df_restaurants = pd.DataFrame(output, columns=['Name', 'Link', 'Rank', 'Rating', 'Reviews', 'Price'])
-df_restaurants.to_csv("C:/Users/gjave/Desktop/restaurants.csv", sep = '|', encoding='UTF-8',index=False)
+df_restaurants.to_csv("C:/Users/gjave/Desktop/restaurants_istanbul.csv", sep = '|', encoding='UTF-8',index=False)

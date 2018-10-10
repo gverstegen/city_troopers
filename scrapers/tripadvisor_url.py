@@ -18,10 +18,14 @@ def add_url_column(df, trip_url_feature, output_feature):
     count = 1
     for i in trip_url_list:
         print("item " + str(count))
-        url = get_url(i)
+        try:
+            url = get_url(i)
+        except:
+            url = ''
         print(url)
         url_list.append(url)
-        count += count
+        count += 1
+
     df[output_feature] = url_list
     return df
 
